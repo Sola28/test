@@ -1,0 +1,60 @@
+﻿@model List<ZDLISPlus.Web.Models.LabOrder>
+@using ZDLISPlus.Web.Models
+@{
+    ViewData["Title"] = "Results";
+}
+
+<div class="page-title">
+    <div>
+        <p>RESULT ENTRY</p>
+        <h1>Results</h1>
+        <span>@Model.Count orders in progress</span>
+    </div>
+</div>
+
+<section class="panel orders">
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>ACCESSION</th>
+                    <th>PATIENT</th>
+                    <th>TESTS</th>
+                    <th>STATUS</th>
+                    <th style="width:220px">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    <tr>
+                        <td class="accession">@o.Accession</td>
+                        <td>
+                            <div class="patient">
+                                <span>@o.Patient.Initials</span>
+                                <div>
+                                    <strong>@o.Patient.FullName</strong>
+                                    <small>@o.Patient.Gender · @o.Patient.Age y</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="tests">@string.Join(", ", o.Tests.Select(t => t.CatalogTest.Code))</td>
+                        <td>@await Html.PartialAsync("_StatusBadge", o)</td>
+                        <td style="display:flex;gap:12px;align-items:center">
+                            <a asp-action="Enter" asp-route-id="@o.Id" class="more" style="color:#087f78;font-weight:600">Enter results</a>
+                            <a asp-action="Print" asp-route-id="@o.Id" target="_blank" class="more">Print 🖨</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@if (!Model.Any())
+{
+    <div class="panel" style="padding:30px;text-align:center;color:#65758b">
+        No orders are waiting for result entry. Orders appear here when their status is
+        <strong>Processing</strong> or <strong>For validation</strong>.
+    </div>
+}

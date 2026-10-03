@@ -1,0 +1,15 @@
+﻿@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Access denied";
+}
+<div class="auth-wrap">
+    <div class="auth-card" style="text-align:center">
+        <h1 class="auth-title" style="font-size:44px;margin-bottom:6px">403</h1>
+        <p class="auth-sub" style="margin-bottom:22px">
+            You don't have permission to view that page.
+        </p>
+        <a asp-controller="Home" asp-action="Index" class="new-patient" style="justify-content:center">
+            Back to dashboard
+        </a>
+    </div>
+</div>

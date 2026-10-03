@@ -1,0 +1,123 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.DashboardViewModel
+@{ ViewData["Title"] = "Overview"; }
+
+<div class="page-title">
+  <div>
+    <p>@Model.TodayLabel</p>
+    <h1>Overview</h1>
+    <span>Here’s what’s happening in your laboratory today.</span>
+  </div>
+  <a asp-controller="Orders" asp-action="New" class="new-patient">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14"/></svg>
+    New order
+  </a>
+</div>
+
+<section class="stats-grid">
+  @foreach (var s in Model.Stats)
+  {
+    <article class="stat">
+      <div class="stat-icon @s.Accent"></div>
+      <div><span>@s.Label</span><strong>@s.Value</strong><small>@s.Sub</small></div>
+    </article>
+  }
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel workload">
+    <div class="panel-head">
+      <div><h2>Laboratory workload</h2><p>Hourly order volume</p></div>
+      <select><option>Today</option><option>This week</option></select>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-y"><span>30</span><span>20</span><span>10</span><span>0</span></div>
+      <div class="bars">
+        @foreach (var b in Model.Workload)
+        {
+          var height = Math.Max(8, (int)(b.Value * 1.1));
+          <div class="bar-col"><div class="bar @(b.IsPeak ? "peak" : "")" style="height:@(height)px"></div><span>@b.Hour</span></div>
+        }
+      </div>
+    </div>
+    <div class="chart-legend">
+      <span><i class="dot teal-dot"></i>Completed <b>@Model.CompletedToday</b></span>
+      <span><i class="dot blue-dot"></i>In progress <b>@Model.InProgressToday</b></span>
+      <span class="tat">Average TAT <b>@Model.AverageTatMinutes min</b></span>
+    </div>
+  </article>
+
+  <article class="panel instruments">
+    <div class="panel-head"><div><h2>Instrument status</h2><p>Live connectivity</p></div>
+      <a asp-controller="Instruments" asp-action="Index"><button>View all</button></a></div>
+@foreach (var i in Model.Instruments)
+{
+  <div class="instrument-row">
+    <div class="instrument-icon"></div>
+    <div class="instrument-info">
+      <strong>@i.Name</strong>
+      <span>
+        @i.Discipline ·
+        @switch (i.InterfaceKind)
+        {
+          case ZDLISPlus.Web.Models.InterfaceKind.TcpServer:
+            @($"TCP :{i.TcpPort}")
+            break;
+          case ZDLISPlus.Web.Models.InterfaceKind.TcpClient:
+            @($"{i.TcpHost}:{i.TcpPort}")
+            break;
+          case ZDLISPlus.Web.Models.InterfaceKind.Serial:
+            @($"{i.SerialPort} @ {i.SerialBaud}")
+            break;
+          case ZDLISPlus.Web.Models.InterfaceKind.File:
+            @($"File · {i.WatchFolder}")
+            break;
+          default:
+            @("—")
+            break;
+        }
+      </span>
+    </div>
+    <div class="instrument-state">
+      <span class="state @i.StateCss"><i></i>@i.State</span>
+      <small>@i.QueueNote</small>
+    </div>
+  </div>
+}
+  </article>
+</section>
+
+<section class="panel orders">
+  <div class="panel-head orders-head">
+    <div><h2>Recent laboratory orders</h2><p>@Model.RecentOrders.Count visible records</p></div>
+    <div>
+      <a asp-controller="Orders" asp-action="Index"><button class="view-button">View all orders ›</button></a>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>ACCESSION</th><th>PATIENT</th><th>TYPE</th><th>ORDERED</th><th>TESTS</th><th>STATUS</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var o in Model.RecentOrders)
+      {
+        <tr>
+          <td class="accession">
+            @if (o.Priority == ZDLISPlus.Web.Models.OrderPriority.Urgent) { <span class="priority-dot"></span> }
+            <a asp-controller="Orders" asp-action="Details" asp-route-id="@o.Id">@o.Accession</a>
+          </td>
+          <td>
+            <div class="patient">
+              <span>@o.Patient.Initials</span>
+              <div><strong>@o.Patient.FullName</strong><small>@o.Patient.Gender · @o.Patient.Age years</small></div>
+            </div>
+          </td>
+          <td>@o.OrderType</td>
+          <td>@o.OrderedAt.ToString("HH:mm")</td>
+          <td class="tests">@string.Join(", ", o.Tests.Select(t => t.CatalogTest.Code))</td>
+          <td>@await Html.PartialAsync("_StatusBadge", o)</td>
+          <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@o.Id" class="more">⋯</a></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</section>

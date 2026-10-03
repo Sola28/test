@@ -1,0 +1,23 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · ZDLIS+</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="antialiased">
+    <div class="app-shell">
+        @await Html.PartialAsync("_Sidebar")
+        <main class="main">
+            @await Html.PartialAsync("_Topbar")
+            <div class="content">
+                @await Html.PartialAsync("_Flash")
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

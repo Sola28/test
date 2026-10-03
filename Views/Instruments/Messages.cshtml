@@ -1,0 +1,51 @@
+﻿@model List<ZDLISPlus.Web.Models.InstrumentMessage>
+@{
+    var inst = (ZDLISPlus.Web.Models.Instrument)ViewData["Instrument"]!;
+    var page = (int)ViewData["Page"]!;
+    var totalPages = (int)ViewData["TotalPages"]!;
+    ViewData["Title"] = $"Messages · {inst.Name}";
+}
+
+<div class="page-title">
+  <div><p>INSTRUMENT MESSAGES</p><h1>@inst.Name</h1><span>Page @@page of @totalPages</span></div>
+  <a asp-action="Index" class="new-patient" style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<section class="panel">
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>WHEN</th><th>DIR</th><th>STATUS</th><th>SAMPLE</th><th>RESULTS</th><th>SUMMARY</th><th></th></tr>
+      </thead>
+      <tbody>
+      @foreach (var m in Model)
+      {
+        <tr>
+          <td>@m.At.ToString("MMM d HH:mm:ss")</td>
+          <td>@m.Direction</td>
+          <td><span class="status @(m.Status == ZDLISPlus.Web.Models.MessageStatus.Error ? "red" : m.Status == ZDLISPlus.Web.Models.MessageStatus.Dispatched ? "green" : "slate")">@m.Status</span></td>
+          <td class="accession">@(m.SampleId ?? "—")</td>
+          <td>@m.ResultCount</td>
+          <td>@m.Summary</td>
+          <td>
+            <details>
+              <summary class="more">Raw</summary>
+              <pre style="max-width:520px;white-space:pre-wrap;font-size:10px;background:#f7fafb;padding:8px;border-radius:6px">@m.Raw</pre>
+            </details>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@if (totalPages > 1)
+{
+  <nav class="pager">
+    @for (int i = 1; i <= totalPages; i++)
+    {
+      <a class="@(i == page ? "active" : "")" asp-action="Messages" asp-route-id="@inst.Id" asp-route-page="@i">@i</a>
+    }
+  </nav>
+}

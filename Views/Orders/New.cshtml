@@ -1,0 +1,92 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.NewOrderViewModel
+@{ ViewData["Title"] = "New order"; }
+
+<div class="page-title">
+  <div><p>REGISTRATION</p><h1>New Lab Order</h1><span>Select a patient and tests to order.</span></div>
+</div>
+
+<form asp-action="New" method="post" class="panel" style="padding:20px">
+  @Html.AntiForgeryToken()
+  <div asp-validation-summary="All" class="form-error"></div>
+
+  <div class="patient-form">
+    <div class="full">
+      <label>Patient</label>
+      <select asp-for="PatientId" required>
+        <option value="">— Select patient —</option>
+        @foreach (var p in Model.Patients)
+        {
+          <option value="@p.Id" selected="@(Model.PatientId == p.Id)">@p.MedicalRecordNumber · @p.FullName (@p.Gender, @p.Age)</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label>Order type</label>
+      <select asp-for="OrderType">
+        <option>Outpatient</option><option>Inpatient</option><option>Emergency</option>
+      </select>
+    </div>
+    <div>
+      <label>Priority</label>
+      <select asp-for="Priority">
+        <option value="Normal">Normal</option>
+        <option value="Urgent">Urgent</option>
+      </select>
+    </div>
+    <div class="full">
+      <label>Requesting physician</label>
+      <input asp-for="RequestingPhysician" />
+    </div>
+    <div class="full">
+      <label>Tests</label>
+      <div class="test-picker">
+  @foreach (var group in Model.Tests
+        .Where(t => t.IsOrderable)
+        .GroupBy(t => t.Discipline)
+        .OrderBy(g => g.Key))
+  {
+    <div class="test-group">
+      <h4 class="test-group-title">@group.Key</h4>
+      @foreach (var t in group.OrderBy(t => t.SortOrder).ThenBy(t => t.Name))
+      {
+        var id = $"t_{t.Id}";
+        <label class="test-choice @(Model.SelectedTestIds.Contains(t.Id) ? "selected" : "")" for="@id">
+          <input id="@id" type="checkbox" name="SelectedTestIds" value="@t.Id"
+                 @(Model.SelectedTestIds.Contains(t.Id) ? "checked" : "") />
+          <span>
+            <strong>@t.Code — @t.Name</strong>
+            <small>
+              @if (t.IsProfile)
+              {
+                <text>Profile · </text>
+                @(string.Join(", ", t.Children.OrderBy(c => c.SortOrder).Select(c => c.Code)))
+              }
+              else
+              {
+                @t.SampleType
+              }
+              · @t.TurnaroundMinutes min · ₱@t.Price.ToString("N2")
+            </small>
+          </span>
+        </label>
+      }
+    </div>
+  }
+</div>
+    </div>
+    <div class="form-actions">
+      <a asp-action="Index">Cancel</a>
+      <button type="submit" class="new-patient">Create order</button>
+    </div>
+  </div>
+</form>
+
+@section Scripts {
+<script>
+document.querySelectorAll('.test-choice input').forEach(cb => {
+  cb.addEventListener('change', e => {
+    e.target.closest('.test-choice').classList.toggle('selected', e.target.checked);
+  });
+});
+</script>
+}

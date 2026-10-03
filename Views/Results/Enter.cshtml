@@ -1,0 +1,219 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.ResultEntryViewModel
+@using ZDLISPlus.Web.Models
+@{
+    ViewData["Title"] = $"Enter results · {Model.Accession}";
+}
+
+<div class="page-title">
+    <div>
+        <p>RESULT ENTRY · @Model.Accession</p>
+        <h1>@Model.PatientName</h1>
+        <span>
+            @Model.PatientMrn · @Model.PatientGender · @Model.PatientAge y ·
+            @Model.OrderType · Ordered @Model.OrderedAt.ToString("MMM d HH:mm")
+        </span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+        <span class="status @Model.StatusCss">@Model.StatusLabel</span>
+        <a asp-action="Index"
+           class="new-patient"
+           style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">
+            ← Back
+        </a>
+    </div>
+</div>
+
+<form id="entryForm" asp-action="Enter" asp-route-id="@Model.OrderId" method="post">
+    @Html.AntiForgeryToken()
+
+    @foreach (var group in Model.Groups)
+    {
+        <section class="panel" style="margin-bottom:16px">
+            <div class="panel-head">
+                <div>
+                    <h2>@group.OrderedTestCode — @group.OrderedTestName</h2>
+                    <p>
+                        @group.Discipline · @group.SampleType
+                        @(group.IsProfile ? "· profile" : "")
+                    </p>
+                </div>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:12%">CODE</th>
+                            <th style="width:32%">COMPONENT</th>
+                            <th style="width:22%">RESULT</th>
+                            <th style="width:10%">UNIT</th>
+                            <th style="width:18%">REFERENCE</th>
+                            <th style="width:6%">FLAG</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in group.Rows)
+                        {
+                            var flag = (row.Flag ?? "").ToUpperInvariant();
+                            var flagClass = flag switch
+                            {
+                                "H" => "flag-H",
+                                "L" => "flag-L",
+                                "N" => "flag-N",
+                                _ => "muted"
+                            };
+                            var inputId = $"v_{group.OrderedTestId}_{row.ComponentTestId}";
+                            <tr>
+                                <td><strong>@row.Code</strong></td>
+                                <td>@row.Name</td>
+                                <td>
+                                    <input id="@inputId"
+                                           name="@inputId"
+                                           value="@row.Value"
+                                           data-ref="@row.ReferenceRange"
+                                           data-input="result"
+                                           class="result-input"
+                                           autocomplete="off"
+                                           autocapitalize="off"
+                                           spellcheck="false"
+                                           placeholder="—" />
+                                </td>
+                                <td class="muted">@(row.Unit ?? "—")</td>
+                                <td class="muted">@(row.ReferenceRange ?? "—")</td>
+                                <td>
+                                    <span class="flag-preview @flagClass">
+                                        @(string.IsNullOrEmpty(flag) ? "—" : flag)
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+
+    @if (!Model.Groups.Any())
+    {
+        <div class="panel" style="padding:30px;text-align:center;color:#65758b">
+            This order has no tests to enter results for.
+        </div>
+    }
+</form>
+
+<div style="position:sticky;bottom:0;background:var(--canvas);border-top:1px solid var(--line);padding:14px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px">
+    <div style="color:#65758b;font-size:11px">
+        Press <kbd style="background:#fff;border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-size:10px">Enter</kbd>
+        to move to the next field. Empty fields are ignored.
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="submit" form="entryForm"
+                class="new-patient"
+                style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">
+            Save draft
+        </button>
+
+        <form asp-action="Submit" asp-route-id="@Model.OrderId" method="post" style="display:inline"
+              onsubmit="return confirm('Submit these results for validation? The order will move to the validation queue.');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="new-patient">Submit for validation</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ---------- Flag computation (client side, mirrors ResultFlagService) ----------
+        function parseNum(s) {
+          if (s == null) return null;
+          const n = parseFloat(String(s).trim());
+          return isNaN(n) ? null : n;
+        }
+
+        function computeFlag(value, refRange) {
+          if (!value || !refRange) return '';
+          const v = String(value).trim();
+          if (v === '') return '';
+          const r = String(refRange).trim();
+
+          const n = parseNum(v);
+          if (n === null) {
+            // Qualitative — mark N when the value matches the reference text
+            return r.toLowerCase().includes(v.toLowerCase()) ? 'N' : '';
+          }
+
+          // "< X"
+          let m = r.match(/^<\s*(-?\d+(?:\.\d+)?)/);
+          if (m) return n >= parseFloat(m[1]) ? 'H' : 'N';
+
+          // "> X"
+          m = r.match(/^>\s*(-?\d+(?:\.\d+)?)/);
+          if (m) return n <= parseFloat(m[1]) ? 'L' : 'N';
+
+          // "A – B"  (en dash, hyphen, em dash)
+          m = r.match(/(-?\d+(?:\.\d+)?)\s*[–\-—]\s*(-?\d+(?:\.\d+)?)/);
+          if (m) {
+            const min = parseFloat(m[1]);
+            const max = parseFloat(m[2]);
+            if (n < min) return 'L';
+            if (n > max) return 'H';
+            return 'N';
+          }
+
+          return '';
+        }
+
+        function flagClass(f) {
+          if (f === 'H') return 'flag-H';
+          if (f === 'L') return 'flag-L';
+          if (f === 'N') return 'flag-N';
+          return 'muted';
+        }
+
+        // ---------- Live flag preview ----------
+        document.querySelectorAll('input[data-input="result"]').forEach(inp => {
+          const refresh = () => {
+            const flagEl = inp.closest('tr').querySelector('.flag-preview');
+            const f = computeFlag(inp.value, inp.dataset.ref || '');
+            flagEl.className = 'flag-preview ' + flagClass(f);
+            flagEl.textContent = f || '—';
+          };
+          inp.addEventListener('input', refresh);
+          refresh();
+        });
+
+        // ---------- Enter moves to the next input ----------
+        const inputs = Array.from(document.querySelectorAll('input[data-input="result"]'));
+        inputs.forEach((inp, i) => {
+          inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const next = inputs[i + 1];
+              if (next) {
+                next.focus();
+                next.select();
+              } else {
+                inp.blur();
+              }
+            }
+          });
+        });
+
+        // ---------- First input gets focus ----------
+        if (inputs.length > 0) {
+          inputs[0].focus();
+        }
+
+        // ---------- Warn before leaving with unsaved changes ----------
+        let dirty = false;
+        inputs.forEach(inp => inp.addEventListener('input', () => { dirty = true; }));
+        document.getElementById('entryForm')?.addEventListener('submit', () => { dirty = false; });
+        window.addEventListener('beforeunload', e => {
+          if (dirty) {
+            e.preventDefault();
+            e.returnValue = '';
+          }
+        });
+    </script>
+}

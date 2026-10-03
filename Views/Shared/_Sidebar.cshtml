@@ -1,0 +1,54 @@
+﻿@{
+    var current = (ViewContext.RouteData.Values["controller"] ?? "").ToString();
+    string Active(string c) => string.Equals(current, c, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+
+    var perm = Context.RequestServices.GetRequiredService<ZDLISPlus.Web.Services.PermissionService>();
+    var granted = await perm.GetGrantedModulesAsync(User);
+    bool Can(string module) => granted.Contains(module);
+}
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <span class="brand-mark">
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>
+      </svg>
+    </span>
+    <div>
+      <strong>ZDLIS<span>+</span></strong>
+      <small>Laboratory system</small>
+    </div>
+    <button class="mobile-close" id="mobileClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <nav>
+    @if (Can("Home") || Can("Patients") || Can("Orders") || Can("Results")
+         || Can("Validation") || Can("Reports") || Can("Instruments") || Can("Audit"))
+    {
+      <p class="nav-label">WORKSPACE</p>
+      @if (Can("Home"))         { <a asp-controller="Home"        asp-action="Index" class="nav-item @Active("Home")"><span>Overview</span></a> }
+      @if (Can("Patients"))     { <a asp-controller="Patients"    asp-action="Index" class="nav-item @Active("Patients")"><span>Patients</span></a> }
+      @if (Can("Orders"))       { <a asp-controller="Orders"      asp-action="Index" class="nav-item @Active("Orders")"><span>Lab Orders</span></a> }
+      @if (Can("Results"))      { <a asp-controller="Results"     asp-action="Index" class="nav-item @Active("Results")"><span>Results</span></a> }
+      @if (Can("Validation"))   { <a asp-controller="Validation"  asp-action="Index" class="nav-item @Active("Validation")"><span>Validation</span></a> }
+      @if (Can("Reports"))      { <a asp-controller="Reports"     asp-action="Index" class="nav-item @Active("Reports")"><span>Reports</span></a> }
+      @if (Can("Instruments"))  { <a asp-controller="Instruments" asp-action="Index" class="nav-item @Active("Instruments")"><span>Instruments</span></a> }
+      @if (Can("Audit"))        { <a asp-controller="Audit"       asp-action="Index" class="nav-item @Active("Audit")"><span>Audit Trail</span></a> }
+    }
+
+    @if (User.IsInRole("Administrator"))
+    {
+      <p class="nav-label lower">ADMINISTRATION</p>
+      <a asp-controller="Configuration" asp-action="Index" class="nav-item @Active("Configuration")"><span>Configuration</span></a>
+      <a asp-controller="Users"         asp-action="Index" class="nav-item @Active("Users")"><span>User Accounts</span></a>
+      <a asp-controller="Roles"         asp-action="Index" class="nav-item @Active("Roles")"><span>Roles</span></a>
+    }
+  </nav>
+
+  <div class="lab-card">
+    <div class="lab-card-icon"></div>
+    <div><strong>Zafire Diagnostic Lab</strong><span>Main Laboratory</span></div>
+  </div>
+</aside>
+<button class="scrim" id="scrim" aria-hidden="true"></button>

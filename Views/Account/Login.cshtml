@@ -1,0 +1,61 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.LoginViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Sign in";
+}
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <span class="brand-mark" style="width:44px;height:44px;border-radius:12px">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+                     stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
+                </svg>
+            </span>
+            <div>
+                <strong style="font-size:20px">ZDLIS<span style="color:#37d0c4">+</span></strong>
+                <small style="display:block;color:#8794a0;font-size:11px">Laboratory Information System</small>
+            </div>
+        </div>
+
+        <h1 class="auth-title">Welcome back</h1>
+        <p class="auth-sub">Sign in to continue to the laboratory workspace.</p>
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div asp-validation-summary="ModelOnly" class="form-error"></div>
+
+            <div class="auth-field">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" autocomplete="username" autofocus required />
+                <span asp-validation-for="Email" class="form-error" style="display:block;background:none;padding:4px 0;color:#b63d3d"></span>
+            </div>
+
+            <div class="auth-field">
+                <label asp-for="Password"></label>
+                <input asp-for="Password" autocomplete="current-password" required />
+                <span asp-validation-for="Password" class="form-error" style="display:block;background:none;padding:4px 0;color:#b63d3d"></span>
+            </div>
+
+            <label class="auth-remember">
+                <input asp-for="RememberMe" type="checkbox" />
+                <span>Keep me signed in</span>
+            </label>
+
+            <button type="submit" class="new-patient" style="width:100%;justify-content:center">
+                Sign in
+            </button>
+        </form>
+
+        <p class="auth-foot">
+            Zafire Diagnostic Laboratory · Main Laboratory
+        </p>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

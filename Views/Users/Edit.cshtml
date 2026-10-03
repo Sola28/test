@@ -1,0 +1,95 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.UserEditViewModel
+@{ ViewData["Title"] = $"Edit {Model.DisplayName}"; }
+
+<div class="page-title">
+    <div>
+        <p>ADMINISTRATION</p>
+        <h1>Edit user</h1>
+        <span>@Model.Email</span>
+    </div>
+    <a asp-action="Index" class="new-patient"
+       style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<form asp-action="Edit" method="post" class="panel" style="padding:22px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="All" class="form-error"></div>
+
+    @if (Model.IsCurrentUser)
+    {
+        <div class="flash" style="background:#e8f1fb;color:#326ba7;margin-bottom:14px">
+            You are editing your own account. Role and lock changes are limited to protect the system.
+        </div>
+    }
+    @if (Model.IsLastAdmin)
+    {
+        <div class="flash" style="background:#fff2db;color:#a86f12;margin-bottom:14px">
+            This is the last remaining Administrator. The Administrator role cannot be removed.
+        </div>
+    }
+
+    <div class="patient-form">
+        <div class="full">
+            <label>Email</label>
+            <input asp-for="Email" type="email" required />
+        </div>
+        <div class="full">
+            <label>Display name</label>
+            <input asp-for="DisplayName" required />
+        </div>
+
+        <div class="full">
+            <label>Roles</label>
+            <div class="test-picker">
+                @foreach (var role in Model.AvailableRoles)
+                {
+                    var id = "r_" + role;
+                    var isSelected = Model.SelectedRoles.Contains(role);
+                    var isLocked = Model.IsLastAdmin && role == "Administrator";
+                    <label class="test-choice @(isSelected ? "selected" : "")" for="@id">
+                        <input id="@id" type="checkbox" name="SelectedRoles" value="@role"
+                               checked="@isSelected"
+                               disabled="@isLocked" />
+                        <span>
+                            <strong>@role</strong>
+                            @if (isLocked)
+                            {
+                                <small>locked — last admin</small>
+                            }
+                        </span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="full" style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
+            <label style="font-size:12px;color:#65758b">
+                Leave password fields blank to keep the current password.
+            </label>
+        </div>
+        <div>
+            <label>New password</label>
+            <input asp-for="NewPassword" type="password" autocomplete="new-password" />
+        </div>
+        <div>
+            <label>Confirm new password</label>
+            <input asp-for="ConfirmPassword" type="password" autocomplete="new-password" />
+        </div>
+
+        <div class="form-actions">
+            <a asp-action="Index">Cancel</a>
+            <button type="submit" class="new-patient">Save changes</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        document.querySelectorAll('.test-choice input').forEach(cb => {
+            cb.addEventListener('change', e =>
+                e.target.closest('.test-choice').classList.toggle('selected', e.target.checked));
+        });
+    </script>
+}

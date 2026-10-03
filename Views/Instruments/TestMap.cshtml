@@ -1,0 +1,87 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.TestMapEditViewModel
+@{ ViewData["Title"] = $"Test map · {Model.InstrumentName}"; }
+
+<div class="page-title">
+  <div>
+    <p>INSTRUMENT</p>
+    <h1>Test mapping</h1>
+    <span>@Model.InstrumentName · @Model.Rows.Count maps configured</span>
+  </div>
+  <a asp-action="Index" class="new-patient" style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<section class="panel" style="margin-bottom:14px">
+  <div class="panel-head"><div><h2>Add mapping</h2><p>Map the code the instrument sends to a ZDLIS test component</p></div></div>
+  <form asp-action="AddMap" method="post" style="padding:16px 20px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="instrumentId" value="@Model.InstrumentId" />
+    <div class="patient-form">
+      <div>
+        <label>Instrument code</label>
+        <input name="instrumentCode" required placeholder="e.g. WBC" />
+      </div>
+      <div>
+        <label>ZDLIS component</label>
+        <select name="componentTestId" required>
+          <option value="">— select —</option>
+          @foreach (var t in Model.AllTests)
+          {
+            var label = t.ParentTest is null
+              ? $"{t.Code} — {t.Name}"
+              : $"{t.ParentTest.Code} › {t.Code} — {t.Name}";
+            <option value="@t.Id">@label</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label>Factor (optional)</label>
+        <input name="factor" type="number" step="0.0001" placeholder="leave blank for 1.0" />
+      </div>
+      <div>
+        <label>Unit override (optional)</label>
+        <input name="unitOverride" />
+      </div>
+      <div class="full form-actions">
+        <button type="submit" class="new-patient">Add mapping</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Configured maps</h2></div></div>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>INSTRUMENT CODE</th><th>ZDLIS COMPONENT</th><th>FACTOR</th><th>UNIT OVERRIDE</th><th>ACTIVE</th><th></th></tr>
+      </thead>
+      <tbody>
+      @foreach (var r in Model.Rows)
+      {
+        <tr>
+          <td class="accession">@r.InstrumentCode</td>
+          <td>@r.ComponentLabel</td>
+          <td>@(r.Factor?.ToString() ?? "1.0")</td>
+          <td>@(r.UnitOverride ?? "—")</td>
+          <td>@(r.IsActive ? "Yes" : "No")</td>
+          <td style="display:flex;gap:8px">
+            <form asp-action="ToggleMap" method="post" style="display:inline">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@r.Id" />
+              <input type="hidden" name="instrumentId" value="@Model.InstrumentId" />
+              <button type="submit" class="more">@(r.IsActive ? "Disable" : "Enable")</button>
+            </form>
+            <form asp-action="DeleteMap" method="post" style="display:inline"
+                  onsubmit="return confirm('Delete this mapping?');">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="id" value="@r.Id" />
+              <input type="hidden" name="instrumentId" value="@Model.InstrumentId" />
+              <button type="submit" class="more" style="color:#ba4141">Delete</button>
+            </form>
+          </td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</section>

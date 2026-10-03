@@ -1,0 +1,30 @@
+﻿@model ZDLISPlus.Web.Models.Patient
+@{ ViewData["Title"] = Model.FullName; }
+
+<div class="page-title">
+  <div>
+    <p>@Model.MedicalRecordNumber</p>
+    <h1>@Model.FullName</h1>
+    <span>@Model.Gender · @Model.Age years · @Model.Phone · @Model.Address</span>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Order history</h2><p>@Model.Orders.Count records</p></div></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>ACCESSION</th><th>ORDERED</th><th>TESTS</th><th>STATUS</th></tr></thead>
+      <tbody>
+      @foreach (var o in Model.Orders.OrderByDescending(o => o.OrderedAt))
+      {
+        <tr>
+          <td class="accession"><a asp-controller="Orders" asp-action="Details" asp-route-id="@o.Id">@o.Accession</a></td>
+          <td>@o.OrderedAt.ToString("g")</td>
+          <td class="tests">@string.Join(", ", o.Tests.Select(t => t.CatalogTest?.Code ?? ""))</td>
+          <td>@await Html.PartialAsync("_StatusBadge", o)</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</section>

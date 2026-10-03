@@ -1,0 +1,36 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.RoleEditViewModel
+@{ ViewData["Title"] = "New role"; }
+
+<div class="page-title">
+    <div>
+        <p>ADMINISTRATION</p>
+        <h1>New role</h1>
+        <span>Define a custom role. Assign it later from the Users page.</span>
+    </div>
+    <a asp-action="Index" class="new-patient"
+       style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<form asp-action="Create" method="post" class="panel" style="padding:22px">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="form-error"></div>
+
+    <div class="patient-form">
+        <div class="full">
+            <label>Role name</label>
+            <input asp-for="Name" required placeholder="e.g. Senior Technologist" />
+        </div>
+
+        <div class="full" style="color:#65758b;font-size:12px">
+            Custom roles have no built-in permissions in this app. The pages currently
+            gated by role are <strong>Configuration</strong>, <strong>User Accounts</strong>,
+            and <strong>Roles</strong> — all of which require <em>Administrator</em>.
+            Use custom roles for organisational labelling and future rule wiring.
+        </div>
+
+        <div class="form-actions">
+            <a asp-action="Index">Cancel</a>
+            <button type="submit" class="new-patient">Create role</button>
+        </div>
+    </div>
+</form>

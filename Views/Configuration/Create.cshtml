@@ -1,0 +1,102 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.TestCatalogEditViewModel
+@{
+    var isChild = Model.ParentTestId is not null;
+    ViewData["Title"] = isChild ? "Add component" : "New test";
+}
+
+<div class="page-title">
+    <div>
+        <p>CATALOG</p>
+        <h1>@(isChild ? "Add component" : "New test")</h1>
+        <span>@(isChild ? $"Under {Model.ParentName}" : "Create a profile or a standalone test")</span>
+    </div>
+    <a asp-action="Index" class="new-patient" style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<form asp-action="Create" method="post" class="panel" style="padding:22px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ParentTestId" />
+    <div asp-validation-summary="All" class="form-error"></div>
+
+    <div class="patient-form">
+        <div>
+            <label>Code</label>
+            <input asp-for="Code" required placeholder="e.g. CBC or WBC" />
+        </div>
+        <div>
+            <label>Name</label>
+            <input asp-for="Name" required placeholder="Complete Blood Count" />
+        </div>
+
+        @if (!isChild)
+        {
+            <div>
+                <label>Discipline</label>
+                <input asp-for="Discipline" list="discipline-list" required placeholder="Hematology" />
+                <datalist id="discipline-list">
+                    @foreach (var d in Model.Disciplines)
+                    {
+                        <option value="@d"></option>
+                    }
+                </datalist>
+            </div>
+            <div>
+                <label>Sample type</label>
+                <input asp-for="SampleType" placeholder="EDTA Whole Blood" />
+            </div>
+            <div>
+                <label>Turnaround (min)</label>
+                <input asp-for="TurnaroundMinutes" type="number" min="1" max="1440" />
+            </div>
+            <div>
+                <label>Price (₱)</label>
+                <input asp-for="Price" type="number" step="0.01" min="0" />
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="Discipline" />
+            <input type="hidden" asp-for="SampleType" />
+            <input type="hidden" asp-for="TurnaroundMinutes" />
+            <input type="hidden" asp-for="Price" />
+
+            <div>
+                <label>Unit</label>
+                <input asp-for="Unit" placeholder="g/dL" />
+            </div>
+            <div>
+                <label>Reference range</label>
+                <input asp-for="ReferenceRange" placeholder="13.0 – 17.0" />
+            </div>
+        }
+
+        <div>
+            <label>Sort order</label>
+            <input asp-for="SortOrder" type="number" min="0" />
+        </div>
+
+        @if (!isChild)
+        {
+            <div class="full" style="display:flex;gap:24px;margin-top:4px">
+                <label style="display:flex;align-items:center;gap:8px;font-weight:500">
+                    <input asp-for="IsProfile" type="checkbox" /> Profile (contains components)
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-weight:500">
+                    <input asp-for="IsOrderable" type="checkbox" /> Orderable
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-weight:500">
+                    <input asp-for="IsActive" type="checkbox" /> Active
+                </label>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="IsActive" value="true" />
+        }
+
+        <div class="form-actions">
+            <a asp-action="Index">Cancel</a>
+            <button type="submit" class="new-patient">Save</button>
+        </div>
+    </div>
+</form>

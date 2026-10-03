@@ -1,0 +1,20 @@
+﻿@model (int Page, int TotalPages, string Action, Dictionary<string, string?> RouteValues)
+@if (Model.TotalPages > 1)
+{
+    <nav class="pager">
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            var route = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in Model.RouteValues)
+            {
+                if (kv.Value is not null)
+                    route[kv.Key] = kv.Value;
+            }
+            route["page"] = i.ToString();
+
+            <a class="@(i == Model.Page ? "active" : "")"
+               asp-action="@Model.Action"
+               asp-all-route-data="route">@i</a>
+        }
+    </nav>
+}

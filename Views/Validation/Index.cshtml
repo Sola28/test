@@ -1,0 +1,148 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.ValidationViewModel
+@using ZDLISPlus.Web.Models
+@{
+    ViewData["Title"] = "Validation";
+    var results = ViewData["Results"] as Dictionary<(int, int, int), OrderTestResult>
+                  ?? new Dictionary<(int, int, int), OrderTestResult>();
+}
+
+<div class="page-title">
+  <div>
+    <p>QUALITY GATE</p>
+    <h1>Validation</h1>
+    <span>@Model.Pending.Count awaiting review</span>
+  </div>
+</div>
+
+@if (!Model.Pending.Any())
+{
+  <div class="panel" style="padding:30px;text-align:center;color:#65758b">
+    No pending results. Submit results for validation from the
+    <a asp-controller="Results" asp-action="Index">Results page</a>.
+  </div>
+}
+
+@foreach (var o in Model.Pending)
+{
+  <section class="panel" style="margin-bottom:16px">
+    <div class="panel-head">
+      <div>
+        <h2>@o.Accession — @o.Patient.FullName</h2>
+        <p>@o.Patient.MedicalRecordNumber · @o.Patient.Gender · @o.Patient.Age y · @o.OrderType · Ordered @o.OrderedAt.ToString("MMM d HH:mm")</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="status @o.StatusCss">@o.StatusLabel</span>
+        <a asp-controller="Results" asp-action="Enter" asp-route-id="@o.Id"
+           class="more" style="color:#087f78">Edit values</a>
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:12%">CODE</th>
+            <th style="width:32%">TEST</th>
+            <th style="width:12%">RESULT</th>
+            <th style="width:10%">UNIT</th>
+            <th style="width:16%">REFERENCE</th>
+            <th style="width:8%">FLAG</th>
+          </tr>
+        </thead>
+        <tbody>
+        @foreach (var t in o.Tests)
+        {
+          var isProfile = t.CatalogTest.IsProfile;
+          var children = t.CatalogTest.Children.OrderBy(c => c.SortOrder).ToList();
+
+          if (isProfile && children.Count > 0)
+          {
+            <tr>
+              <td colspan="6" style="background:#f7fafb;padding:8px 10px;font-weight:700;font-size:11px;color:#087f78">
+                @t.CatalogTest.Code — @t.CatalogTest.Name
+              </td>
+            </tr>
+            foreach (var c in children)
+            {
+              results.TryGetValue((o.Id, t.CatalogTestId, c.Id), out var r);
+              var flag = (r?.Flag ?? "").ToUpperInvariant();
+              var flagClass = flag switch { "H" => "flag-H", "L" => "flag-L", "N" => "flag-N", _ => "muted" };
+              <tr>
+                <td style="padding-left:22px"><strong>@c.Code</strong></td>
+                <td>@c.Name</td>
+                <td class="result-value">@(r?.Value ?? "—")</td>
+                <td>@(c.Unit ?? "—")</td>
+                <td class="muted">@(c.ReferenceRange ?? "—")</td>
+                <td class="@flagClass">@(string.IsNullOrEmpty(flag) ? "—" : flag)</td>
+              </tr>
+            }
+          }
+          else
+          {
+            results.TryGetValue((o.Id, t.CatalogTestId, t.CatalogTestId), out var r);
+            var flag = (r?.Flag ?? "").ToUpperInvariant();
+            var flagClass = flag switch { "H" => "flag-H", "L" => "flag-L", "N" => "flag-N", _ => "muted" };
+            <tr>
+              <td><strong>@t.CatalogTest.Code</strong></td>
+              <td>@t.CatalogTest.Name</td>
+              <td class="result-value">@(r?.Value ?? "—")</td>
+              <td>@(t.CatalogTest.Unit ?? "—")</td>
+              <td class="muted">@(t.CatalogTest.ReferenceRange ?? "—")</td>
+              <td class="@flagClass">@(string.IsNullOrEmpty(flag) ? "—" : flag)</td>
+            </tr>
+          }
+        }
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap">
+      <form asp-action="Reject" asp-route-id="@o.Id" method="post"
+            onsubmit="return confirm('Return this order to result entry?');">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="reason" value="Returned by pathologist" />
+        <button type="submit" class="new-patient"
+                style="background:#fff;color:#ba4141;box-shadow:none;border:1px solid var(--line)">
+          Return to entry
+        </button>
+      </form>
+
+      <form asp-action="FlagCritical" asp-route-id="@o.Id" method="post">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="new-patient"
+                style="background:#d94d4d"
+                onclick="return confirm('Flag this result as CRITICAL?');">
+          Flag critical
+        </button>
+      </form>
+
+      <form asp-action="Release" asp-route-id="@o.Id" method="post">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="new-patient"
+                onclick="return confirm('Release this result? It will be visible to the requesting physician.');">
+          Release
+        </button>
+      </form>
+    </div>
+  </section>
+}
+
+<section class="panel" style="margin-top:20px">
+  <div class="panel-head"><div><h2>Recently validated</h2><p>Last 15 released or critical results</p></div></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>ACCESSION</th><th>PATIENT</th><th>STATUS</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var o in Model.RecentlyValidated)
+      {
+        <tr>
+          <td class="accession">@o.Accession</td>
+          <td>@o.Patient.FullName</td>
+          <td>@await Html.PartialAsync("_StatusBadge", o)</td>
+          <td><a asp-controller="Results" asp-action="Print" asp-route-id="@o.Id" target="_blank" class="more">Print 🖨</a></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</section>

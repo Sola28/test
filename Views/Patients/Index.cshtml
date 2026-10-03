@@ -1,0 +1,63 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.PatientListViewModel
+@{ ViewData["Title"] = "Patients"; }
+
+<div class="page-title">
+  <div>
+    <p>REGISTRY</p>
+    <h1>Patients</h1>
+    <span>@Model.TotalCount registered</span>
+  </div>
+  <button class="new-patient" data-open-patient>
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14"/></svg>
+    New patient
+  </button>
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <form method="get" class="search" style="max-width:420px">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+      <input name="q" value="@Model.Q" placeholder="Search name, MRN, phone…" />
+    </form>
+    <span>@Model.TotalCount total</span>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>MRN</th><th>PATIENT</th><th>GENDER</th><th>AGE</th><th>PHONE</th><th>ADDRESS</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var p in Model.Patients)
+      {
+        <tr>
+          <td class="accession">@p.MedicalRecordNumber</td>
+          <td>
+            <div class="patient">
+              <span>@p.Initials</span>
+              <div><strong>@p.FullName</strong><small>Born @p.BirthDate.ToString("yyyy-MM-dd")</small></div>
+            </div>
+          </td>
+          <td>@p.Gender</td>
+          <td>@p.Age</td>
+          <td>@p.Phone</td>
+          <td>@p.Address</td>
+          <td><a asp-action="Details" asp-route-id="@p.Id" class="more">›</a></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+
+@await Html.PartialAsync("_Pager", (Model.Page, Model.TotalPages, "Index",
+    new Dictionary<string,string?> { ["q"] = Model.Q }))
+</section>
+
+<dialog id="patientDialog" class="patient-dialog">
+  <form asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    @await Html.PartialAsync("_PatientForm", new ZDLISPlus.Web.Models.Patient())
+    <div class="form-actions">
+      <button type="button" onclick="document.getElementById('patientDialog').close()">Cancel</button>
+      <button type="submit" class="new-patient">Save patient</button>
+    </div>
+  </form>
+</dialog>

@@ -1,0 +1,46 @@
+﻿@model ZDLISPlus.Web.Models.LabOrder
+@using ZDLISPlus.Web.Models
+@{ ViewData["Title"] = Model.Accession; }
+
+<div class="page-title">
+  <div>
+    <p>@Model.OrderType @(Model.Priority == OrderPriority.Urgent ? "· URGENT" : "")</p>
+    <h1>@Model.Accession</h1>
+    <span>@Model.Patient.FullName · @Model.OrderedAt.ToString("g")</span>
+  </div>
+  <div style="display:flex;gap:8px">
+    <form asp-action="UpdateStatus" method="post">
+      @Html.AntiForgeryToken()
+      <input type="hidden" name="id" value="@Model.Id" />
+      <select name="status">
+        @foreach (OrderStatus s in Enum.GetValues<OrderStatus>())
+        {
+          <option value="@s" selected="@(Model.Status == s)">@s</option>
+        }
+      </select>
+      <button type="submit" class="new-patient">Update</button>
+    </form>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Tests</h2><p>@Model.Tests.Count ordered</p></div></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>CODE</th><th>NAME</th><th>DISCIPLINE</th><th>RESULT</th><th>FLAG</th><th>VALIDATED</th></tr></thead>
+      <tbody>
+      @foreach (var t in Model.Tests)
+      {
+        <tr>
+          <td class="accession">@t.CatalogTest.Code</td>
+          <td>@t.CatalogTest.Name</td>
+          <td>@t.CatalogTest.Discipline</td>
+          <td>@(t.Result ?? "—") @t.Unit</td>
+          <td>@t.Flag</td>
+          <td>@(t.ValidatedAt?.ToString("g") ?? "—")</td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+</section>

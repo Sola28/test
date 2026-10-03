@@ -1,0 +1,91 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.RoleListViewModel
+@{ ViewData["Title"] = "Roles"; }
+
+<div class="page-title">
+    <div>
+        <p>ADMINISTRATION</p>
+        <h1>Roles</h1>
+        <span>@Model.Rows.Count roles defined · @Model.TotalModules modules</span>
+    </div>
+    <div style="display:flex;gap:8px">
+        <a asp-controller="Users" asp-action="Index" class="new-patient"
+           style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">
+            User accounts
+        </a>
+        <a asp-action="Create" class="new-patient">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5v14" />
+            </svg>
+            New role
+        </a>
+    </div>
+</div>
+
+<section class="panel">
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>ROLE</th>
+                    <th>TYPE</th>
+                    <th>USERS</th>
+                    <th>MODULES</th>
+                    <th style="width:220px">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var r in Model.Rows)
+            {
+                var chipClass = r.Name switch
+                {
+                    "Administrator" => "admin",
+                    "Pathologist"   => "path",
+                    "Technologist"  => "tech",
+                    "Reception"     => "reception",
+                    _               => ""
+                };
+
+                <tr>
+                    <td><span class="role-chip @chipClass">@r.Name</span></td>
+                    <td>
+                        @if (r.IsSystemRole) { <span class="status slate">System</span> }
+                        else { <span class="status blue">Custom</span> }
+                    </td>
+                    <td>@r.UserCount</td>
+                    <td>
+                        @if (r.Name == "Administrator")
+                        {
+                            <span class="status green">All modules</span>
+                        }
+                        else
+                        {
+                            <strong>@r.ModuleCount</strong>
+                            <span class="muted" style="color:#8794a0">/ @Model.TotalModules</span>
+                        }
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                            <a asp-action="Edit" asp-route-id="@r.Id" class="more">Edit &amp; permissions</a>
+
+                            @if (!r.IsSystemRole && !r.HasUsers)
+                            {
+                                <form asp-action="Delete" asp-route-id="@r.Id" method="post"
+                                      onsubmit="return confirm('Delete role @r.Name?');"
+                                      style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="more" style="color:#ba4141">Delete</button>
+                                </form>
+                            }
+                            else if (!r.IsSystemRole && r.HasUsers)
+                            {
+                                <span class="more" style="color:#8794a0;cursor:not-allowed"
+                                      title="Cannot delete a role that still has users">Delete</span>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

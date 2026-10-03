@@ -1,0 +1,61 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.OrderListViewModel
+@using ZDLISPlus.Web.Models
+@{ ViewData["Title"] = "Lab Orders"; }
+
+<div class="page-title">
+  <div><p>WORKLIST</p><h1>Lab Orders</h1><span>@Model.TotalCount orders</span></div>
+  <a asp-action="New" class="new-patient">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14"/></svg>
+    New order
+  </a>
+</div>
+
+<section class="panel orders">
+  <div class="panel-head orders-head">
+    <form method="get" class="search" style="max-width:420px">
+      <input name="q" value="@Model.Q" placeholder="Search accession or patient…" />
+      <select name="status" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        @foreach (OrderStatus s in Enum.GetValues<OrderStatus>())
+        {
+          <option value="@s" selected="@(Model.Status == s)">@s</option>
+        }
+      </select>
+    </form>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>ACCESSION</th><th>PATIENT</th><th>TYPE</th><th>ORDERED</th><th>TESTS</th><th>STATUS</th><th></th></tr></thead>
+      <tbody>
+      @foreach (var o in Model.Orders)
+      {
+        <tr>
+          <td class="accession">
+            @if (o.Priority == OrderPriority.Urgent) { <span class="priority-dot"></span> }
+            <a asp-action="Details" asp-route-id="@o.Id">@o.Accession</a>
+          </td>
+          <td>
+            <div class="patient">
+              <span>@o.Patient.Initials</span>
+              <div><strong>@o.Patient.FullName</strong><small>@o.Patient.Gender · @o.Patient.Age y</small></div>
+            </div>
+          </td>
+          <td>@o.OrderType</td>
+          <td>@o.OrderedAt.ToString("MMM d HH:mm")</td>
+          <td class="tests">@string.Join(", ", o.Tests.Select(t => t.CatalogTest.Code))</td>
+          <td>@await Html.PartialAsync("_StatusBadge", o)</td>
+          <td><a asp-action="Details" asp-route-id="@o.Id" class="more">›</a></td>
+        </tr>
+      }
+      </tbody>
+    </table>
+  </div>
+
+  @await Html.PartialAsync("_Pager", (Model.Page, Model.TotalPages, "Index",
+    new Dictionary<string,string?>
+    {
+        ["q"] = Model.Q,
+        ["status"] = Model.Status?.ToString()
+    }))
+</section>

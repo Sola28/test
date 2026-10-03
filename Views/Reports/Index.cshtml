@@ -1,0 +1,48 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.ReportsViewModel
+@{ ViewData["Title"] = "Reports"; }
+
+<div class="page-title">
+  <div><p>ANALYTICS</p><h1>Reports</h1><span>Last @Model.Days days</span></div>
+  <form method="get" style="display:flex;gap:8px">
+    <select name="days" onchange="this.form.submit()">
+      <option value="7"  selected="@(Model.Days == 7)">Last 7 days</option>
+      <option value="14" selected="@(Model.Days == 14)">Last 14 days</option>
+      <option value="30" selected="@(Model.Days == 30)">Last 30 days</option>
+    </select>
+  </form>
+</div>
+
+<section class="stats-grid">
+  <article class="stat"><div class="stat-icon teal"></div><div><span>Total orders</span><strong>@Model.TotalOrders</strong><small>in period</small></div></article>
+  <article class="stat"><div class="stat-icon blue"></div><div><span>Gross revenue</span><strong>₱@Model.TotalRevenue.ToString("N0")</strong><small>catalog total</small></div></article>
+  <article class="stat"><div class="stat-icon amber"></div><div><span>Average TAT</span><strong>@Model.AverageTat min</strong><small>target ≤ 60 min</small></div></article>
+  <article class="stat"><div class="stat-icon red"></div><div><span>Released</span><strong>@Model.Released.Count</strong><small>last 50 shown</small></div></article>
+</section>
+
+<section class="dashboard-grid">
+  <article class="panel">
+    <div class="panel-head"><div><h2>Daily volume</h2><p>Orders per day</p></div></div>
+    <div class="chart-wrap">
+      <div class="chart-y"><span>@Model.DailyVolume.Max(x => x.Value)</span><span>—</span><span>—</span><span>0</span></div>
+      <div class="bars">
+        @foreach (var b in Model.DailyVolume)
+        {
+          var h = Math.Max(8, b.Value * 8);
+          <div class="bar-col"><div class="bar" style="height:@(h)px"></div><span>@b.Hour</span></div>
+        }
+      </div>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-head"><div><h2>By discipline</h2><p>Test mix</p></div></div>
+    <div class="instrument-row" style="display:block">
+      @foreach (var d in Model.ByDiscipline)
+      {
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #edf0f2">
+          <span>@d.Discipline</span><strong>@d.Count</strong>
+        </div>
+      }
+    </div>
+  </article>
+</section>

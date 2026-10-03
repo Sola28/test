@@ -1,0 +1,65 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.UserCreateViewModel
+@{ ViewData["Title"] = "New user"; }
+
+<div class="page-title">
+    <div>
+        <p>ADMINISTRATION</p>
+        <h1>New user</h1>
+        <span>Create an account and assign roles.</span>
+    </div>
+    <a asp-action="Index" class="new-patient"
+       style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<form asp-action="Create" method="post" class="panel" style="padding:22px">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="form-error"></div>
+
+    <div class="patient-form">
+        <div class="full">
+            <label>Email</label>
+            <input asp-for="Email" type="email" required placeholder="user@zdlis.local" />
+        </div>
+        <div class="full">
+            <label>Display name</label>
+            <input asp-for="DisplayName" required placeholder="Jane Doe" />
+        </div>
+        <div>
+            <label>Password</label>
+            <input asp-for="Password" type="password" required />
+        </div>
+        <div>
+            <label>Confirm password</label>
+            <input asp-for="ConfirmPassword" type="password" required />
+        </div>
+
+        <div class="full">
+            <label>Roles</label>
+            <div class="test-picker">
+                @foreach (var role in Model.AvailableRoles)
+                {
+                    var id = $"r_{role}";
+                    <label class="test-choice" for="@id">
+                        <input id="@id" type="checkbox" name="SelectedRoles" value="@role" />
+                        <span><strong>@role</strong></span>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a asp-action="Index">Cancel</a>
+            <button type="submit" class="new-patient">Create user</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        document.querySelectorAll('.test-choice input').forEach(cb => {
+            cb.addEventListener('change', e =>
+                e.target.closest('.test-choice').classList.toggle('selected', e.target.checked));
+        });
+    </script>
+}

@@ -1,0 +1,238 @@
+﻿@model ZDLISPlus.Web.Models.LabOrder
+@using ZDLISPlus.Web.Models
+@{
+    Layout = null;
+    var reportDate = DateTime.Now;
+    var results = ViewData["Results"] as Dictionary<(int, int), OrderTestResult>
+                  ?? new Dictionary<(int, int), OrderTestResult>();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Result @Model.Accession — @Model.Patient.FullName</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#eef1f4;font-family:"Segoe UI",Inter,system-ui,-apple-system,Arial,sans-serif;color:#132238;font-size:12px;line-height:1.4}
+  .sheet{width:210mm;min-height:297mm;background:#fff;margin:16px auto;padding:18mm 16mm;box-shadow:0 8px 30px rgba(20,30,45,.12)}
+  @@media print{
+    html,body{background:#fff}
+    .sheet{margin:0;box-shadow:none;width:auto;min-height:auto;padding:12mm 14mm}
+    .no-print{display:none !important}
+    @@page{size:A4;margin:12mm}
+  }
+  .rpt-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:2px solid #087f78;padding-bottom:12px;margin-bottom:16px}
+  .rpt-brand{display:flex;gap:12px;align-items:center}
+  .rpt-logo{width:46px;height:46px;border-radius:10px;background:#087f78;color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px}
+  .rpt-brand h1{margin:0;font-size:18px;letter-spacing:-.02em}
+  .rpt-brand h1 span{color:#087f78}
+  .rpt-brand p{margin:2px 0 0;font-size:10px;color:#65758b}
+  .rpt-meta{text-align:right;font-size:10px;color:#65758b;line-height:1.5}
+  .rpt-meta strong{color:#132238;font-size:12px;display:block}
+  .rpt-section-title{font-size:11px;letter-spacing:.14em;color:#087f78;font-weight:700;text-transform:uppercase;margin:14px 0 6px}
+  .patient-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 18px;border:1px solid #dfe6eb;border-radius:6px;padding:12px 14px;background:#fafcfd}
+  .patient-grid div{font-size:11px}
+  .patient-grid span{display:block;color:#65758b;font-size:9px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+  .patient-grid strong{font-size:12px;color:#132238}
+  table.results{width:100%;border-collapse:collapse;margin-top:8px}
+  table.results th{background:#f2f6f7;color:#4d5f70;text-align:left;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid #d5dde3}
+  table.results td{padding:9px 10px;border-bottom:1px solid #edf0f2;font-size:11px;vertical-align:top}
+  table.results tr:last-child td{border-bottom:1px solid #d5dde3}
+  .result-value{font-weight:600;font-size:12px}
+  .flag-H{color:#c0392b;font-weight:700}
+  .flag-L{color:#2c5aa0;font-weight:700}
+  .flag-N{color:#287c57;font-weight:600}
+  .muted{color:#8794a0}
+  .summary-bar{display:flex;gap:16px;margin-top:14px;font-size:10px;color:#65758b}
+  .summary-bar b{color:#132238;display:block;font-size:12px}
+  .signature{margin-top:40px;display:flex;justify-content:space-between;gap:40px}
+  .sig-block{flex:1;text-align:center}
+  .sig-line{border-top:1px solid #132238;margin:0 0 6px}
+  .sig-block strong{display:block;font-size:11px}
+  .sig-block span{display:block;font-size:9px;color:#65758b;margin-top:2px}
+  .rpt-footer{margin-top:24px;border-top:1px solid #dfe6eb;padding-top:10px;font-size:9px;color:#8794a0;text-align:center}
+  .actions{position:fixed;top:14px;right:14px;display:flex;gap:8px;z-index:10}
+  .actions button,.actions a{border:1px solid #dfe6eb;background:#fff;border-radius:8px;padding:9px 14px;font:600 12px inherit;cursor:pointer;text-decoration:none;color:#132238;box-shadow:0 4px 10px rgba(20,30,45,.08)}
+  .actions .primary{background:#087f78;color:#fff;border-color:#087f78}
+  .critical-banner{background:#fbe5e5;border-left:4px solid #c0392b;color:#8b2a2a;padding:10px 14px;border-radius:6px;font-size:11px;margin:10px 0 0;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="actions no-print">
+  <a href="/Results" id="backBtn">← Back</a>
+  <button class="primary" onclick="window.print()">Print / Save PDF</button>
+</div>
+
+<script>
+  // If we arrived from a page (i.e. the current tab has a referrer in history),
+  // go back so the user returns to where they were. Otherwise fall back to /Results.
+  (function () {
+    var back = document.getElementById('backBtn');
+    if (!back) return;
+
+    // Detect if this tab was opened fresh (target=_blank / direct URL / middle-click)
+    var openedFresh = !document.referrer
+                   || document.referrer.indexOf(location.origin) === -1
+                   || window.history.length <= 1;
+
+    if (openedFresh) {
+      // Keep the /Results fallback
+      return;
+    }
+
+    // Otherwise use history.back() so we return to the exact previous view
+    back.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '/Results';
+      }
+    });
+  })();
+</script>
+
+<div class="sheet">
+
+  <div class="rpt-header">
+    <div class="rpt-brand">
+      <div class="rpt-logo">Z+</div>
+      <div>
+        <h1>Zafire Diagnostic <span>Laboratory</span></h1>
+        <p>Main Laboratory · ZDLIS+ Laboratory Information System</p>
+        <p>123 Medical Center Drive · Quezon City · (02) 8123-4567</p>
+      </div>
+    </div>
+    <div class="rpt-meta">
+      <strong>OFFICIAL RESULT REPORT</strong>
+      Accession: @Model.Accession<br />
+      Printed: @reportDate.ToString("MMM d, yyyy HH:mm")<br />
+      Status: @Model.StatusLabel
+    </div>
+  </div>
+
+  @if (Model.Status == OrderStatus.Critical)
+  {
+    <div class="critical-banner">⚠ CRITICAL RESULT — Immediate physician notification required.</div>
+  }
+
+  <div class="rpt-section-title">Patient information</div>
+  <div class="patient-grid">
+    <div><span>Name</span><strong>@Model.Patient.FullName</strong></div>
+    <div><span>MRN</span><strong>@Model.Patient.MedicalRecordNumber</strong></div>
+    <div><span>Sex</span><strong>@Model.Patient.Gender</strong></div>
+    <div><span>Age</span><strong>@Model.Patient.Age y</strong></div>
+    <div><span>Date of birth</span><strong>@Model.Patient.BirthDate.ToString("MMM d, yyyy")</strong></div>
+    <div><span>Phone</span><strong>@(Model.Patient.Phone ?? "—")</strong></div>
+    <div><span>Order type</span><strong>@Model.OrderType</strong></div>
+    <div><span>Priority</span><strong>@Model.Priority</strong></div>
+  </div>
+
+  <div class="rpt-section-title">Order information</div>
+  <div class="patient-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div><span>Ordered at</span><strong>@Model.OrderedAt.ToString("MMM d, yyyy HH:mm")</strong></div>
+    <div><span>Requesting physician</span><strong>@(Model.RequestingPhysician ?? "—")</strong></div>
+    <div><span>Tests</span><strong>@Model.Tests.Count</strong></div>
+    <div><span>Status</span><strong>@Model.StatusLabel</strong></div>
+  </div>
+
+  <div class="rpt-section-title">Laboratory results</div>
+  <table class="results">
+    <thead>
+      <tr>
+        <th style="width:12%">Code</th>
+        <th style="width:34%">Test</th>
+        <th style="width:14%">Result</th>
+        <th style="width:10%">Unit</th>
+        <th style="width:18%">Reference</th>
+        <th style="width:12%">Flag</th>
+      </tr>
+    </thead>
+    <tbody>
+    @foreach (var t in Model.Tests.OrderBy(x => x.CatalogTest.Discipline).ThenBy(x => x.CatalogTest.SortOrder))
+    {
+        var isProfile = t.CatalogTest.IsProfile;
+        var children = t.CatalogTest.Children.OrderBy(c => c.SortOrder).ToList();
+
+        if (isProfile && children.Count > 0)
+        {
+            <tr class="profile-row">
+                <td colspan="6" style="background:#f7fafb;padding:8px 10px;font-weight:700;font-size:11px;color:#087f78;letter-spacing:.04em">
+                    @t.CatalogTest.Code — @t.CatalogTest.Name
+                    <span class="muted" style="font-weight:400;margin-left:8px;font-size:10px">
+                        @t.CatalogTest.SampleType · @children.Count components
+                    </span>
+                </td>
+            </tr>
+            foreach (var c in children)
+            {
+                results.TryGetValue((t.CatalogTestId, c.Id), out var r);
+                var flag = (r?.Flag ?? "").ToUpperInvariant();
+                var flagClass = flag switch { "H" => "flag-H", "L" => "flag-L", "N" => "flag-N", _ => "muted" };
+
+                <tr>
+                    <td style="padding-left:22px"><strong>@c.Code</strong></td>
+                    <td>@c.Name</td>
+                    <td class="result-value">@(r?.Value ?? "—")</td>
+                    <td>@(c.Unit ?? "—")</td>
+                    <td class="muted">@(c.ReferenceRange ?? "—")</td>
+                    <td class="@flagClass">@(string.IsNullOrEmpty(flag) ? "—" : flag)</td>
+                </tr>
+            }
+        }
+        else
+        {
+            results.TryGetValue((t.CatalogTestId, t.CatalogTestId), out var r);
+            var flag = (r?.Flag ?? "").ToUpperInvariant();
+            var flagClass = flag switch { "H" => "flag-H", "L" => "flag-L", "N" => "flag-N", _ => "muted" };
+
+            <tr>
+                <td><strong>@t.CatalogTest.Code</strong></td>
+                <td>
+                    @t.CatalogTest.Name
+                    <div class="muted" style="font-size:10px;margin-top:2px">
+                        @t.CatalogTest.Discipline · @t.CatalogTest.SampleType
+                    </div>
+                </td>
+                <td class="result-value">@(r?.Value ?? "—")</td>
+                <td>@(t.CatalogTest.Unit ?? "—")</td>
+                <td class="muted">@(t.CatalogTest.ReferenceRange ?? "—")</td>
+                <td class="@flagClass">@(string.IsNullOrEmpty(flag) ? "—" : flag)</td>
+            </tr>
+        }
+    }
+    </tbody>
+  </table>
+
+  <div class="summary-bar">
+    <div>Total tests<b>@Model.Tests.Count</b></div>
+    <div>Abnormal<b>@results.Values.Count(r => (r.Flag ?? "").ToUpperInvariant() is "H" or "L")</b></div>
+    <div>Validated by<b>@(results.Values.FirstOrDefault(r => r.VerifiedBy != null)?.VerifiedBy ?? "—")</b></div>
+    <div>Validated at<b>@(results.Values.FirstOrDefault(r => r.VerifiedAt != null)?.VerifiedAt?.ToString("MMM d, yyyy HH:mm") ?? "—")</b></div>
+  </div>
+
+  <div class="signature">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <strong>Performed by</strong>
+      <span>Medical Technologist</span>
+      <span>License No. ____________</span>
+    </div>
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <strong>Verified by</strong>
+      <span>Pathologist</span>
+      <span>License No. ____________</span>
+    </div>
+  </div>
+
+  <div class="rpt-footer">
+    This report was generated by ZDLIS+ and is valid without signature when transmitted electronically.<br />
+    Released only to the requesting physician or authorized personnel. Report ID: @Model.Accession · @reportDate.ToString("yyyyMMddHHmm")
+  </div>
+
+</div>
+
+</body>
+</html>

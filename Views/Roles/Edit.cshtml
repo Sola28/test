@@ -1,0 +1,86 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.RoleEditViewModel
+@{ ViewData["Title"] = "Edit role"; }
+
+<div class="page-title">
+    <div>
+        <p>ADMINISTRATION</p>
+        <h1>Edit role</h1>
+        <span>@Model.Name · @Model.UserCount user(s)</span>
+    </div>
+    <a asp-action="Index" class="new-patient"
+       style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<form asp-action="Edit" method="post" class="panel" style="padding:22px">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="All" class="form-error"></div>
+
+    @if (Model.IsSystemRole)
+    {
+        <div class="flash" style="background:#fff2db;color:#a86f12;margin-bottom:14px">
+            <strong>@Model.Name</strong> is a system role and cannot be renamed, but you can still
+            adjust its module access.
+        </div>
+    }
+
+    @if (Model.IsAdministrator)
+    {
+        <div class="flash" style="background:#e8f1fb;color:#326ba7;margin-bottom:14px">
+            <strong>Administrator</strong> always has access to every module.
+            This cannot be changed.
+        </div>
+    }
+
+    <div class="patient-form">
+        <div class="full">
+            <label>Role name</label>
+            <input asp-for="Name" required disabled="@Model.IsSystemRole" />
+        </div>
+
+        <div class="full" style="color:#65758b;font-size:14px">
+            Currently assigned to <strong>@Model.UserCount</strong> user(s).
+            Manage assignments from <a asp-controller="Users" asp-action="Index">User Accounts</a>.
+        </div>
+
+        <div class="full" style="border-top:1px solid var(--line);padding-top:16px;margin-top:6px">
+            <h2 style="margin:0 0 6px;font-size:16px">Module access</h2>
+            <p style="margin:0 0 12px;color:#65758b;font-size:13px">
+                Pick the modules this role can use. Users with this role will see only these
+                links in the sidebar and can only open the matching pages.
+            </p>
+
+            <div class="perm-grid @(Model.IsAdministrator ? "perm-locked" : "")">
+                @foreach (var m in Model.AvailableModules)
+                {
+                    var id = $"m_{m.Key}";
+                    var isGranted = Model.IsAdministrator || Model.GrantedModules.Contains(m.Key);
+                    <label class="perm-item @(isGranted ? "on" : "")" for="@id">
+                        <input id="@id" type="checkbox" name="GrantedModules" value="@m.Key"
+                               checked="@isGranted"
+                               disabled="@Model.IsAdministrator" />
+                        <div>
+                            <strong>@m.Title</strong>
+                            <small>@m.Description</small>
+                        </div>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a asp-action="Index">Cancel</a>
+            <button type="submit" class="new-patient">Save changes</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        document.querySelectorAll('.perm-item input').forEach(cb => {
+            cb.addEventListener('change', e =>
+                e.target.closest('.perm-item').classList.toggle('on', e.target.checked));
+        });
+    </script>
+}

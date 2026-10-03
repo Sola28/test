@@ -1,0 +1,75 @@
+﻿@model List<ZDLISPlus.Web.Models.Instrument>
+@{
+    ViewData["Title"] = "Instruments";
+    var latest = ViewData["LatestMessage"] as Dictionary<int, DateTime> ?? new();
+}
+
+<div class="page-title">
+  <div>
+    <p>HARDWARE</p>
+    <h1>Instruments</h1>
+    <span>@Model.Count configured · @Model.Count(i => i.IsEnabled) enabled</span>
+  </div>
+  <a asp-action="Create" class="new-patient">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14"/></svg>
+    New instrument
+  </a>
+</div>
+
+@foreach (var i in Model)
+{
+  var lastSeen = latest.TryGetValue(i.Id, out var t) ? t : (DateTime?)null;
+  <section class="panel" style="margin-bottom:14px">
+    <div class="panel-head">
+      <div>
+        <h2>@i.Name</h2>
+        <p>@i.Manufacturer @i.Model · @i.Discipline · @i.InterfaceKind / @i.ProtocolKind</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="state @i.StateCss"><i></i>@i.State</span>
+        @if (!i.IsEnabled) { <span class="status slate">Disabled</span> }
+      </div>
+    </div>
+
+    <div class="instrument-row" style="border-bottom:1px solid #edf0f2">
+      <div class="instrument-info" style="flex:2">
+        <strong>Connection</strong>
+        <span>
+          @switch (i.InterfaceKind)
+          {
+            case ZDLISPlus.Web.Models.InterfaceKind.TcpServer:
+              @($"Listening on port {i.TcpPort}") break;
+            case ZDLISPlus.Web.Models.InterfaceKind.TcpClient:
+              @($"Connecting to {i.TcpHost}:{i.TcpPort}") break;
+            case ZDLISPlus.Web.Models.InterfaceKind.Serial:
+              @($"{i.SerialPort} @ {i.SerialBaud} {i.SerialDataBits}{i.SerialParity?[0]}{i.SerialStopBits?[0]}") break;
+            case ZDLISPlus.Web.Models.InterfaceKind.File:
+              @($"Watching {i.WatchFolder}") break;
+          }
+        </span>
+      </div>
+      <div class="instrument-info">
+        <strong>Test maps</strong>
+        <span>@i.TestMaps.Count configured</span>
+      </div>
+      <div class="instrument-info">
+        <strong>Last activity</strong>
+        <span>@(lastSeen?.ToString("MMM d HH:mm:ss") ?? "—")</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a asp-action="TestMap" asp-route-id="@i.Id" class="more" style="color:#087f78">Test map</a>
+        <a asp-action="Messages" asp-route-id="@i.Id" class="more">Messages</a>
+        <a asp-action="Edit" asp-route-id="@i.Id" class="more">Edit</a>
+        <form asp-action="CycleState" asp-route-id="@i.Id" method="post" style="display:inline">
+          @Html.AntiForgeryToken()
+          <button type="submit" class="more">Toggle state</button>
+        </form>
+        <form asp-action="Delete" asp-route-id="@i.Id" method="post" style="display:inline"
+              onsubmit="return confirm('Delete @i.Name?');">
+          @Html.AntiForgeryToken()
+          <button type="submit" class="more" style="color:#ba4141">Delete</button>
+        </form>
+      </div>
+    </div>
+  </section>
+}

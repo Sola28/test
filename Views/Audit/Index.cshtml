@@ -1,0 +1,138 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.AuditViewModel
+@{ ViewData["Title"] = "Audit Trail"; }
+
+<div class="page-title">
+    <div>
+        <p>COMPLIANCE</p>
+        <h1>Audit Trail</h1>
+        <span>@Model.TotalCount entries · page @Model.Page of @Model.TotalPages</span>
+    </div>
+</div>
+
+<section class="panel">
+    <div class="panel-head">
+        <form method="get" class="search" style="max-width:100%;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input name="q" value="@Model.Q" placeholder="Search user, entity, key, details…" style="min-width:240px;flex:1" />
+
+            <select name="action">
+                <option value="">All actions</option>
+                @foreach (var a in Model.Actions)
+                {
+                    <option value="@a" selected="@(Model.Action == a)">@a</option>
+                }
+            </select>
+
+            <select name="entity">
+                <option value="">All entities</option>
+                @foreach (var e in Model.Entities)
+                {
+                    <option value="@e" selected="@(Model.Entity == e)">@e</option>
+                }
+            </select>
+
+            <input type="date" name="from" value="@(Model.From?.ToString("yyyy-MM-dd"))" title="From" />
+            <input type="date" name="to"   value="@(Model.To?.ToString("yyyy-MM-dd"))"   title="To" />
+
+            <button type="submit" class="new-patient" style="padding:8px 14px">Filter</button>
+            <a asp-action="Index" class="more" style="align-self:center">Reset</a>
+        </form>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:150px">WHEN</th>
+                    <th style="width:180px">USER</th>
+                    <th style="width:180px">ACTION</th>
+                    <th style="width:140px">ENTITY</th>
+                    <th style="width:180px">KEY</th>
+                    <th>DETAILS</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var e in Model.Entries)
+            {
+                var badgeClass = BadgeClassFor(e.Action);
+                <tr>
+                    <td>@e.At.ToString("MMM d, HH:mm:ss")</td>
+                    <td>@e.User</td>
+                    <td>
+                        <span class="audit-badge @badgeClass">@e.Action</span>
+                    </td>
+                    <td>@e.Entity</td>
+                    <td class="accession">@e.EntityKey</td>
+                    <td>
+                        @if (string.IsNullOrWhiteSpace(e.Details))
+                        {
+                            <span class="muted">—</span>
+                        }
+                        else
+                        {
+                            var detailsId = $"d_{e.Id}";
+                            <button type="button" class="audit-toggle"
+                                    onclick="document.getElementById('@detailsId').hidden = !document.getElementById('@detailsId').hidden">
+                                show
+                            </button>
+                            <pre id="@detailsId" class="audit-details" hidden>@PrettyJson(e.Details)</pre>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Entries.Count == 0)
+    {
+        <div style="padding:30px;text-align:center;color:#65758b">
+            No audit entries match the current filters.
+        </div>
+    }
+
+    @await Html.PartialAsync("_Pager", (Model.Page, Model.TotalPages, "Index",
+        new Dictionary<string,string?>
+        {
+            ["q"] = Model.Q,
+            ["action"] = Model.Action,
+            ["entity"] = Model.Entity,
+            ["from"] = Model.From?.ToString("yyyy-MM-dd"),
+            ["to"] = Model.To?.ToString("yyyy-MM-dd")
+        }))
+</section>
+
+@functions {
+    private static string BadgeClassFor(string action)
+    {
+        if (action.StartsWith("StatusChange", StringComparison.OrdinalIgnoreCase))
+            return "status";
+        return action switch
+        {
+            "Created" => "created",
+            "Updated" => "updated",
+            "Deleted" => "deleted",
+            "Login" or "Logout" or "LoginFailed" or "LoginLockedOut"
+                or "PasswordReset" or "UserLocked" or "UserUnlocked"
+                or "UserCreated" or "UserDeleted" or "UserUpdated"
+                or "RoleCreated" or "RoleRenamed" or "RoleDeleted"
+                or "RolePermissionsChanged"
+                or "Print" or "ResultEntry" or "SubmitForValidation"
+                or "RejectValidation" => "security",
+            _ => "other"
+        };
+    }
+
+    private static string PrettyJson(string raw)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(raw);
+            return System.Text.Json.JsonSerializer.Serialize(doc.RootElement,
+                new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        }
+        catch
+        {
+            return raw;
+        }
+    }
+}

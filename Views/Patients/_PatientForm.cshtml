@@ -1,0 +1,30 @@
+﻿@model ZDLISPlus.Web.Models.Patient
+<div class="patient-form">
+  <div>
+    <label>Full name</label>
+    <input asp-for="FullName" required />
+  </div>
+  <div>
+    <label>Gender</label>
+    <select asp-for="Gender">
+      <option value="F">Female</option>
+      <option value="M">Male</option>
+    </select>
+  </div>
+  <div>
+    <label>Date of birth</label>
+    <input asp-for="BirthDate" type="date" />
+  </div>
+  <div>
+    <label>Age</label>
+    <input asp-for="Age" type="number" min="0" max="130" />
+  </div>
+  <div>
+    <label>Phone</label>
+    <input asp-for="Phone" />
+  </div>
+  <div>
+    <label>Address</label>
+    <input asp-for="Address" />
+  </div>
+</div>

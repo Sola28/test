@@ -1,0 +1,17 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.InstrumentEditViewModel
+@{ ViewData["Title"] = "New instrument"; }
+
+<div class="page-title">
+  <div><p>HARDWARE</p><h1>New instrument</h1><span>Configure interface, protocol, and mapping.</span></div>
+  <a asp-action="Index" class="new-patient" style="background:#fff;color:#3d566b;box-shadow:none;border:1px solid var(--line)">← Back</a>
+</div>
+
+<form asp-action="Create" method="post" class="panel" style="padding:22px">
+  @Html.AntiForgeryToken()
+  <div asp-validation-summary="All" class="form-error"></div>
+  @await Html.PartialAsync("_InstrumentForm", Model)
+  <div class="form-actions">
+    <a asp-action="Index">Cancel</a>
+    <button type="submit" class="new-patient">Create</button>
+  </div>
+</form>

@@ -1,0 +1,124 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.UserListViewModel
+@{
+    ViewData["Title"] = "User Accounts";
+}
+
+<div class="page-title">
+    <div>
+        <p>ADMINISTRATION</p>
+        <h1>User Accounts</h1>
+        <span>@Model.Rows.Count shown · @Model.AllRoles.Count roles</span>
+    </div>
+    <a asp-action="Create" class="new-patient">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5v14" />
+        </svg>
+        New user
+    </a>
+</div>
+
+<section class="panel">
+    <div class="panel-head">
+        <form method="get" class="search" style="max-width:520px">
+            <input name="q" value="@Model.Q" placeholder="Search email or username…" />
+            <select name="role" onchange="this.form.submit()">
+                <option value="">All roles</option>
+                @foreach (var r in Model.AllRoles)
+                {
+                    <option value="@r" selected="@(Model.Role == r)">@r</option>
+                }
+            </select>
+        </form>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>USER</th>
+                    <th>EMAIL</th>
+                    <th>ROLES</th>
+                    <th>STATUS</th>
+                    <th style="width:280px">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model.Rows)
+                {
+                    <tr>
+                        <td>
+                            <div class="patient">
+                                <span>@(u.DisplayName.Length >= 2 ? u.DisplayName[..2].ToUpperInvariant() : u.DisplayName.ToUpperInvariant())</span>
+                                <div>
+                                    <strong>@u.DisplayName</strong>
+                                    <small>@(u.IsCurrentUser ? "you" : "account")</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@u.Email</td>
+                        <td>
+                            @if (u.Roles.Count == 0)
+                            {
+                                <span class="role-chip none">no role</span>
+                            }
+                            else
+                            {
+                                @foreach (var r in u.Roles)
+                                {
+                                    var cls = r switch
+                                    {
+                                        "Administrator" => "admin",
+                                        "Pathologist" => "path",
+                                        "Technologist" => "tech",
+                                        "Reception" => "reception",
+                                        _ => ""
+                                    };
+                                    <span class="role-chip @cls">@r</span>
+                                }
+                            }
+                        </td>
+                        <td>
+                            @if (u.IsLockedOut)
+                            {
+                                <span class="status red">Deactivated</span>
+                            }
+                            else
+                            {
+                                <span class="status green">Active</span>
+                            }
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                                <a asp-action="Edit" asp-route-id="@u.Id" class="more">Edit</a>
+
+                                @if (!u.IsCurrentUser)
+                                {
+                                    <form asp-action="ToggleLock" asp-route-id="@u.Id" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="more">
+                                            @(u.IsLockedOut ? "Activate" : "Deactivate")
+                                        </button>
+                                    </form>
+
+                                    <form asp-action="Delete" asp-route-id="@u.Id" method="post"
+                                          onsubmit="return confirm('Permanently delete @u.Email? This cannot be undone.');"
+                                          style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="more" style="color:#ba4141">Delete</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Rows.Count == 0)
+    {
+        <div style="padding:30px;text-align:center;color:#65758b">
+            No users match the current filters.
+        </div>
+    }
+</section>

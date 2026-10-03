@@ -1,0 +1,140 @@
+﻿@model List<ZDLISPlus.Web.Models.TestCatalog>
+@{
+    ViewData["Title"] = "Configuration";
+}
+
+<div class="page-title">
+    <div>
+        <p>CATALOG</p>
+        <h1>Test Configuration</h1>
+        <span>@Model.Count entries · @Model.Sum(t => t.Children.Count) components</span>
+    </div>
+    <a asp-action="Create" class="new-patient">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14" /></svg>
+        New test
+    </a>
+</div>
+
+<div class="panel" style="padding:0;margin-bottom:14px">
+    <form method="get" class="search" style="max-width:420px;margin:14px">
+        <input name="q" value="@ViewData["Q"]" placeholder="Search by code or name…" />
+    </form>
+</div>
+
+@foreach (var discipline in Model.GroupBy(t => t.Discipline).OrderBy(g => g.Key))
+{
+    <section class="panel" style="margin-bottom:14px">
+        <div class="panel-head">
+            <div><h2>@discipline.Key</h2><p>@discipline.Count() entries</p></div>
+        </div>
+
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:28%">CODE / NAME</th>
+                        <th style="width:10%">TYPE</th>
+                        <th style="width:12%">SAMPLE</th>
+                        <th style="width:8%">TAT</th>
+                        <th style="width:10%">PRICE</th>
+                        <th style="width:32%">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in discipline.OrderBy(x => x.SortOrder).ThenBy(x => x.Code))
+                    {
+                        <tr>
+                            <td>
+                                <strong>@t.Code</strong> — @t.Name
+                                @if (!t.IsActive)
+                                {
+                                    <span class="status slate" style="margin-left:6px">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                @if (t.IsProfile)
+                                {
+                                    <span class="status blue">Profile</span>
+                                }
+                                else
+                                {
+                                    <span class="status slate">Standalone</span>
+                                }
+                            </td>
+                            <td>@t.SampleType</td>
+                            <td>@t.TurnaroundMinutes min</td>
+                            <td>₱@t.Price.ToString("N2")</td>
+                            <td>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                    <a asp-action="Edit" asp-route-id="@t.Id" class="more">Edit</a>
+                                    @if (t.IsProfile)
+                                    {
+                                        <a asp-action="Create" asp-route-parentId="@t.Id" class="more" style="color:#087f78">+ Add component</a>
+                                    }
+                                    <form asp-action="Delete" asp-route-id="@t.Id" method="post"
+                                          onsubmit="return confirm('Delete @t.Code?');" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="more" style="color:#ba4141">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        @if (t.IsProfile && t.Children.Any())
+                        {
+                            foreach (var c in t.Children.OrderBy(x => x.SortOrder))
+                            {
+                                <tr style="background:#fafcfd">
+                                    <td style="padding-left:32px">
+                                        <span style="color:#8794a0">↳</span>
+                                        <strong style="color:#4d5f70">@c.Code</strong> — @c.Name
+                                        @if (!c.IsActive)
+                                        {
+                                            <span class="status slate" style="margin-left:6px">Inactive</span>
+                                        }
+                                    </td>
+                                    <td><span class="status slate" style="font-size:9px">Component</span></td>
+                                    <td class="muted">@(c.Unit ?? "—")</td>
+                                    <td class="muted">@(c.ReferenceRange ?? "—")</td>
+                                    <td class="muted">—</td>
+                                    <td>
+                                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                            <a asp-action="Edit" asp-route-id="@c.Id" class="more">Edit</a>
+
+                                            <form asp-action="MoveChild" method="post" style="display:inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@c.Id" />
+                                                <input type="hidden" name="direction" value="up" />
+                                                <button type="submit" class="more" title="Move up">▲</button>
+                                            </form>
+                                            <form asp-action="MoveChild" method="post" style="display:inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@c.Id" />
+                                                <input type="hidden" name="direction" value="down" />
+                                                <button type="submit" class="more" title="Move down">▼</button>
+                                            </form>
+
+                                            <form asp-action="Delete" asp-route-id="@c.Id" method="post"
+                                                  onsubmit="return confirm('Delete @c.Code?');" style="display:inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="more" style="color:#ba4141">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else if (t.IsProfile)
+                        {
+                            <tr style="background:#fafcfd">
+                                <td colspan="6" style="padding-left:32px;color:#8794a0;font-style:italic;font-size:11px">
+                                    No components yet — click <strong>+ Add component</strong> above to add one.
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+}

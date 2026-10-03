@@ -1,0 +1,210 @@
+﻿@model ZDLISPlus.Web.Models.ViewModels.InstrumentEditViewModel
+@using ZDLISPlus.Web.Models
+
+<div class="patient-form">
+
+  <!-- ---------- Presets ---------- -->
+  <div class="full" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#f7fafb;border:1px dashed var(--line);border-radius:8px;padding:10px 12px">
+    <strong style="color:#3d566b;font-size:12px">Quick presets:</strong>
+    <button type="button" class="more" onclick="applyPreset('astm-serial')">Generic ASTM serial</button>
+    <button type="button" class="more" onclick="applyPreset('hl7-tcp')">Generic HL7 TCP</button>
+    <button type="button" class="more" onclick="applyPreset('hl7-serial')">Generic HL7 serial</button>
+  </div>
+
+  <!-- ---------- Identity ---------- -->
+  <div class="full">
+    <label>Name</label>
+    <input asp-for="Name" required placeholder="e.g. Sysmex XN-1000 - Hematology" />
+  </div>
+  <div>
+    <label>Discipline</label>
+    <input asp-for="Discipline" list="discipline-list" required />
+    <datalist id="discipline-list">
+      @foreach (var d in Model.Disciplines) { <option value="@d"></option> }
+    </datalist>
+  </div>
+  <div>
+    <label>Manufacturer</label>
+    <input asp-for="Manufacturer" />
+  </div>
+  <div>
+    <label>Model</label>
+    <input asp-for="Model" />
+  </div>
+  <div>
+    <label>Serial number</label>
+    <input asp-for="SerialNumber" />
+  </div>
+
+  <!-- ---------- Interface & protocol ---------- -->
+  <div>
+    <label>Interface</label>
+    <select asp-for="InterfaceKind" id="ifaceKind">
+      <option value="TcpServer">TCP Server (instrument connects to us)</option>
+      <option value="TcpClient">TCP Client (we connect to instrument)</option>
+      <option value="Serial">Serial (COM port)</option>
+      <option value="File">File folder watch</option>
+    </select>
+  </div>
+  <div>
+    <label>Protocol</label>
+    <select asp-for="ProtocolKind" id="protoKind">
+      <option value="HL7">HL7 v2.x</option>
+      <option value="ASTM">ASTM E1394</option>
+      <option value="Custom">Custom (regex)</option>
+    </select>
+  </div>
+
+  <!-- ---------- TCP section ---------- -->
+  <div class="tcp-only">
+    <label>TCP host <span class="muted">(client mode only)</span></label>
+    <input asp-for="TcpHost" placeholder="192.168.1.100" />
+  </div>
+  <div class="tcp-only">
+    <label>TCP port</label>
+    <input asp-for="TcpPort" type="number" min="1" max="65535" placeholder="5555" />
+  </div>
+
+  <!-- ---------- Serial section ---------- -->
+  <div class="serial-only">
+    <label>COM port</label>
+    <input asp-for="SerialPort" placeholder="COM3" />
+  </div>
+  <div class="serial-only">
+    <label>Baud</label>
+    <input asp-for="SerialBaud" type="number" placeholder="9600" />
+  </div>
+  <div class="serial-only">
+    <label>Data bits</label>
+    <input asp-for="SerialDataBits" type="number" min="5" max="8" />
+  </div>
+  <div class="serial-only">
+    <label>Parity</label>
+    <select asp-for="SerialParity">
+      <option>None</option>
+      <option>Even</option>
+      <option>Odd</option>
+    </select>
+  </div>
+  <div class="serial-only">
+    <label>Stop bits</label>
+    <select asp-for="SerialStopBits">
+      <option>One</option>
+      <option>Two</option>
+    </select>
+  </div>
+
+  <!-- ---------- File section ---------- -->
+  <div class="file-only full">
+    <label>Watch folder</label>
+    <input asp-for="WatchFolder" placeholder="C:\Instruments\Incoming" />
+  </div>
+
+  <!-- ---------- Behaviour ---------- -->
+  <div class="full" style="display:flex;gap:24px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:8px;font-weight:500">
+      <input asp-for="IsEnabled" type="checkbox" /> Enabled
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-weight:500">
+      <input asp-for="AutoStart" type="checkbox" /> Auto-start on app boot
+    </label>
+  </div>
+
+  <div class="full">
+    <label>Notes</label>
+    <textarea asp-for="Notes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font:13px inherit"></textarea>
+  </div>
+
+  <!-- ---------- Protocol reference ---------- -->
+  <div class="full">
+    <details style="background:#f7fafb;border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-top:6px">
+      <summary style="cursor:pointer;font-weight:600;font-size:12px;color:#3d566b">
+        Protocol reference
+      </summary>
+      <div style="font-size:11px;color:#4d5f70;margin-top:10px;line-height:1.6">
+        <p style="margin:0 0 8px">
+          <strong>HL7 v2.x</strong> - MSH/PID/OBR/OBX segments separated by carriage returns.
+          Field separator defaults to pipe. Common on modern analyzers over TCP or serial.
+        </p>
+        <p style="margin:0 0 8px">
+          <strong>ASTM E1394</strong> - H/P/O/R/L records separated by carriage returns.
+          Field separator defaults to pipe. Common on legacy analyzers over serial.
+        </p>
+        <p style="margin:0">
+          <strong>Custom (regex)</strong> - for instruments whose output doesn't match HL7 or ASTM.
+          Supply a regex pattern with named groups: sample, code, value, unit, ref, flag.
+        </p>
+      </div>
+    </details>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    function sync() {
+      var iface = document.getElementById('ifaceKind');
+      var proto = document.getElementById('protoKind');
+      if (!iface || !proto) return;
+
+      var kind = iface.value;
+
+      document.querySelectorAll('.tcp-only').forEach(function (e) {
+        e.style.display = (kind === 'TcpServer' || kind === 'TcpClient') ? '' : 'none';
+      });
+      document.querySelectorAll('.serial-only').forEach(function (e) {
+        e.style.display = kind === 'Serial' ? '' : 'none';
+      });
+      document.querySelectorAll('.file-only').forEach(function (e) {
+        e.style.display = kind === 'File' ? '' : 'none';
+      });
+    }
+
+    window.applyPreset = function (name) {
+      var form = document.querySelector('form');
+      if (!form) return;
+
+      function set(field, value) {
+        var el = form.querySelector('[name="' + field + '"]');
+        if (el) el.value = value;
+      }
+
+      var iface = form.querySelector('[name="InterfaceKind"]');
+      var proto = form.querySelector('[name="ProtocolKind"]');
+
+      switch (name) {
+        case 'astm-serial':
+          if (iface) iface.value = 'Serial';
+          if (proto) proto.value = 'ASTM';
+          set('SerialBaud', 9600);
+          set('SerialDataBits', 8);
+          set('SerialParity', 'None');
+          set('SerialStopBits', 'One');
+          break;
+
+        case 'hl7-tcp':
+          if (iface) iface.value = 'TcpServer';
+          if (proto) proto.value = 'HL7';
+          set('TcpPort', 5555);
+          break;
+
+        case 'hl7-serial':
+          if (iface) iface.value = 'Serial';
+          if (proto) proto.value = 'HL7';
+          set('SerialBaud', 9600);
+          set('SerialDataBits', 8);
+          set('SerialParity', 'None');
+          set('SerialStopBits', 'One');
+          break;
+      }
+
+      sync();
+    };
+
+    var el = document.getElementById('ifaceKind');
+    if (el) {
+      el.addEventListener('change', sync);
+      sync();
+    }
+  })();
+</script>
